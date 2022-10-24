@@ -25,8 +25,7 @@ _start:
     xor ax,ax
     mov al, 0x12
     int 0x10
-
-    call disk_load ; EI OLE KÄYTÖSSÄ
+    
     mov al, 0xAA
 .redraw:
     call draw
@@ -55,9 +54,6 @@ draw:
     inc dx
     jmp .draw_call
 .end:
-    ret
-
-disk_load:
     ret
 
 times 510 - ($ - $$) db 0x00
