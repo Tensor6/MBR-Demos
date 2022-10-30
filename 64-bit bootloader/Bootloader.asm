@@ -2,7 +2,6 @@
 [bits 16]
 
 jmp boot
-nop
 
 KERNEL_SECTOR_COUNT equ 0x04 ; How many sectors does kernel occupies
 
@@ -10,14 +9,14 @@ KERNEL_ADDRESS equ 0x5000 ; Address where the kernel will be loaded
 BOOTLOADER_SECTOR_READ_COUNT equ 0x03 ; How many sector the bootloader occupies
 
 boot:
-	mov [BOOT_DRIVE], dl
-
 	cli
 	xor ax, ax
 	mov ds, ax
 	mov sp, bp
 	mov bp, 0x9000
 	sti
+
+	mov [BOOT_DRIVE], dl
 
 	mov ax, 0x03
 	int 0x10
@@ -86,8 +85,7 @@ LOAD_ADDRESS:
 	call disk_reset
 	call load_kernel
 	cli
-	mov si, gdt_descriptor
-	lgdt [si]
+	lgdt [gdt_descriptor]
 	mov eax, cr0
 	or eax, 0x1
 	mov cr0, eax
@@ -101,8 +99,7 @@ load_kernel:
 	mov ch, 0x00
 	mov cl, 0x04
 	mov dh, 0x00
-	mov si, BOOT_DRIVE
-	mov dl, [si]
+	mov dl, [BOOT_DRIVE]
 	mov bx, KERNEL_ADDRESS
 	int 0x13
 	jc .kdisk_error
@@ -224,8 +221,7 @@ switch_64bit_enable_paging:
 	mov eax, cr0
 	or eax, 1 << 31
 	mov cr0, eax
-	mov si, gdt_descriptor
-	lgdt [si]
+	lgdt [gdt_descriptor]
 	jmp CODE_SEG:start64
 
 [bits 64]
