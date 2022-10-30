@@ -235,6 +235,7 @@ start64:
 	mov gs, ax
 	mov ebp, 0x90000
 	mov esp, ebp
+	sti
 
 	jmp KERNEL_ADDRESS
 
