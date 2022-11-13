@@ -1,3 +1,3 @@
 # MBR-Demos
 
-X86 demos using MBR!
+X86 bootloader demos using MBR!
