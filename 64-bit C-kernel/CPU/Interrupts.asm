@@ -27,10 +27,14 @@
 [section .text]
 
 idt_init:
-
+    mov rsi, IDT_REG
+    lidt [rsi]
     ret
 isr_init:
-
+    mov rax, isr_0
+    mov rdx, 0
+    call set_idt_gate
+    call idt_init
     ret
 
 ; RAX = handler
