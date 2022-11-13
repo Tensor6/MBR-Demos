@@ -7,10 +7,6 @@
 
 %define KERNEL_CS 0x08
 
-%define LOW_16(address) ((address - $$) & 0xFFFF)
-%define HIGH_16(address) (((address - $$) >> 16) & 0xFFFF)
-%define HIGH_32(address) (((address - $$) >> 32) & 0xFFFFFFFF)
-
 %define IRQ0 32
 %define IRQ1 33
 %define IRQ2 34
@@ -43,13 +39,34 @@ set_idt_gate:
     push rbp
     mov rsp, rbp
     sub rsp, 0x10
-    mov QWORD [rbp-8], rax
-    mov QWORD [rbp-16], rdx
+    mov QWORD [rbp-8], rax ; handler address
+    mov QWORD [rbp-16], rdx ; idt index
+    
+    mov rsi, 0
+
     mov rax, rdx
-    mov rdi, IDT_ENTRIES
     mov rcx, 128
-    add rcx, rdx
     mul rcx
+    mov rdi, ENTRIES
+    add rdi, rax
+
+    mov rax, QWORD [rbp-8]
+    mov rdx, rax
+    
+    mov WORD [rdi], ax ; offset1
+    mov ax, KERNEL_CS
+    mov WORD [rdi+2], ax ; selector
+    xor rax, rax
+    mov BYTE [rdi+3], al ; ist
+    mov al, INTERRUPT_GATE
+    mov BYTE [rdi+4], al ; type_attributes
+    mov rax, rdx
+    shr rax, 16
+    shr rdx, 32
+    mov WORD [rdi+6], ax ; offset2
+    mov DWORD [rdi+10], edx ; offset3
+    xor rax, rax
+    mov DWORD [rdi+14], eax ; zero
 
     mov rbp, rsp
     pop rbp
@@ -61,15 +78,17 @@ isr_0:
 
 [SECTION .rodata]
 
-;%macro IDT_GATE 0
-;    dw LOW_16(%1)     ; offset1
-;    dw KERNEL_CS      ; selector
-;    db 0              ; ist
-;    db INTERRUPT_GATE ; type_attributes
-;    dw HIGH_16(%1)    ; offset2
-;    dd HIGH_32(%1)    ; offset3
-;    dd 0              ; zero
-;%endmacro
+; IDT gate structure (128 bytes)
+
+;typedef struct {
+;    uint16_t offset_1;
+;    uint16_t selector;
+;    uint8_t  ist;
+;    uint8_t  type_attributes;
+;    uint16_t offset_2;
+;    uint32_t offset_3;
+;    uint32_t zero;
+;} __attribute__((packed)) idt_gate64;
 
 IDT_REG:
     dq IDT_ENTRIES
