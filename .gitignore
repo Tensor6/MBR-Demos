@@ -1,1 +1,7 @@
 .vscode/c_cpp_properties.json
+64-bit C-kernel/Final.bin
+64-bit C-kernel/Objects/ATA_Driver.o
+64-bit C-kernel/Objects/Interrupts.o
+64-bit C-kernel/Objects/Kernel_final.bin
+64-bit C-kernel/Objects/Kernel.o
+64-bit C-kernel/Objects/Video_driver.o
