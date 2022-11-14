@@ -65,6 +65,9 @@ disk_load:
 .disk_error:
 	mov si, DISK_ERROR_MSG
 	call print_string
+	mov al, 0x0
+	push ax
+	call print_hex_word
 	jmp halt
 .sector_error:
 	mov si, SECTOR_ERROR_MSG
@@ -90,6 +93,26 @@ print_string:
 	popa
 	pop cx
 	ret
+
+print_hex_word:
+    pusha
+    mov bp, sp
+    mov cx, 0x0404
+    mov dx, [bp+18]
+    mov bx, [bp+20]
+.loop:
+    rol dx, cl
+    mov ax, 0x0e0f
+    and al, dl
+    add al, 0x90
+    daa
+    adc al, 0x40
+    daa
+    int 0x10
+    dec ch
+    jnz .loop
+    popa
+    ret
 
 DISK_ERROR_MSG: db "Disk read error!",0xD,0xA,0x00
 SECTOR_ERROR_MSG: db "Sector read error!",0xD,0xA,0x00
@@ -131,6 +154,9 @@ load_kernel:
 .kdisk_error:
 	mov si, KDR
 	call print_string
+	mov al, 0x0
+	push ax
+	call print_hex_word
 	jmp halt
 .ksector_error:
 	mov si, SECTOR_ERROR_MSG
@@ -373,7 +399,7 @@ DATA_SEG equ gdt_data - gdt_start
 
 NOT_CPU64: db "The CPU does not support 64-bit mode!",0x00
 NO_CPUID: db "The CPU does not support CPUID!",0x00
-KDR: db "Failed to read the kernel!",0x00
+KDR: db "Failed to read the kernel!",0xA,0xD,0x00
 DISK_RESET_ERROR: db "Disk reset fail!",0xA,0x00
 NO_A20: db "Failed to enable A20!",0x00
 
