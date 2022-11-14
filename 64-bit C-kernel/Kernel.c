@@ -1,4 +1,5 @@
 #include "kstdint.h"
+#include "Kernel.h"
 #include "Drivers/ATA_Driver.h"
 #include "CPU/Ports.h"
 #include "Drivers/Video_driver.h"
