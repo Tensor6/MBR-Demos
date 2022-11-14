@@ -6,3 +6,4 @@
 64-bit C-kernel/Objects/Kernel.o
 64-bit C-kernel/Objects/Video_driver.o
 
+.vscode/settings.json
