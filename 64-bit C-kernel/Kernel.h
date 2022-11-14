@@ -1,9 +1,5 @@
 #define UNUSED(x) (void)(x)
+#include "kstdint.h"
 
-__attribute__((noreturn)) void halt_kernel(){
-    __asm__ __volatile__ ("cli");
-    while(1){
-        __asm__ __volatile__ ("hlt");
-    }
-    __builtin_unreachable();
-}
+void halt_kernel();
+extern uint64_t read_tsc();
