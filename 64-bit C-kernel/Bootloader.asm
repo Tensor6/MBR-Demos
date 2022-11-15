@@ -207,31 +207,26 @@ start_32bit:
 	jmp switch_64bit
 
 CPUID_unavailable:
-	mov esi, NO_CPUID
-	call print_string32
+	mov edi, 0xA0000
+	mov ecx, 0x7D00
+	mov esi, 0xC0000
+	rep movsb
+	mov edi, 0xA7D00
+	mov ecx, 0x7D00
+	mov al, 0x2C
+	rep stosb
 	jmp halt
 cpu64_unavailable:
-	mov esi, NOT_CPU64
-	call print_string32
+	mov edi, 0xA0000
+	mov ecx, 0x7D00
+	mov esi, 0xC0000
+	rep movsb
+	mov edi, 0xA7D00
+	mov ecx, 0x7D00
+	mov al, 0x28
+	rep stosb
 	jmp halt
 
-print_string32:
-	pusha
-	push ebx
-	mov ebx, 0xb8000
-.loop:
-	lodsb
-	cmp al, 0x00
-	je .end
-	or eax, 0x0100
-	mov WORD [ebx], ax
-	mov WORD [ebx + 1], 0x0F
-	add ebx, 2
-	jmp .loop
-.end:
-	popa
-	pop ebx
-	ret
 switch_64bit:
 	mov eax, cr0
 	and eax, 0x7FFFFFFF
@@ -397,8 +392,6 @@ CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
 
 
-NOT_CPU64: db "The CPU does not support 64-bit mode!",0x00
-NO_CPUID: db "The CPU does not support CPUID!",0x00
 KDR: db "Failed to read the kernel!",0xA,0xD,0x00
 DISK_RESET_ERROR: db "Disk reset fail!",0xA,0x00
 NO_A20: db "Failed to enable A20!",0x00
