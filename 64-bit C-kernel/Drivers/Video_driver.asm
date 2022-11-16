@@ -13,9 +13,9 @@ set_pixel:
     push rdx
     mov rbx, VIDEO_MEMORY
     mov rax, DISPLAY_WIDTH
-    mul rsi
+    mul esi
     pop rdx
-    add rax, rdi
-    add rbx, rax
+    add eax, edi
+    add ebx, eax
     mov BYTE [rbx], dl
     ret
