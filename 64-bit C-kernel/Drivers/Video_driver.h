@@ -7,6 +7,6 @@
 #define VIDEO_MEMORY 0xA0000
 
 extern void set_pixel(uint16_t x, uint16_t y, uint8_t color);
-void draw_char(uint8_t c, uint16_t x, uint16_t y, uint8_t fgcolor, uint8_t bgcolor);
+extern void draw_char(uint8_t c, uint16_t x, uint16_t y, uint8_t fgcolor, uint8_t bgcolor);
 void draw_char_default(uint8_t c, uint16_t x, uint16_t y);
 void clear_screen();
