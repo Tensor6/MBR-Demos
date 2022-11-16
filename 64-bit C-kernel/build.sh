@@ -1,4 +1,5 @@
 #!/bin/sh
+cd "$(dirname "$0")"
 nasm Bootloader.asm -f bin -o ./Objects/Bootloader.bin
 nasm Entry.asm -f elf64 -o ./Objects/Entry.o
 nasm Kernel_assembly.asm -f elf64 -o ./Objects/Kernel_assembly.o

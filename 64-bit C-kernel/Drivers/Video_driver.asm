@@ -5,6 +5,8 @@
 %define VIDEO_MEMORY 0xA0000
 %define VGA_BIOS_FONT 0x9E000
 
+%define CHARACTER_HEIGHT 16
+
 global set_pixel
 global draw_char
 
@@ -22,26 +24,84 @@ set_pixel:
     mov BYTE [rbx], dl
     ret
 
-
-; C       -> EDI
-; X       -> ESI
-; Y       -> EDX
-; fgcolor -> ECX
-; bgcolor -> R8D
+; C       -> EDI 8
+; X       -> ESI 16
+; Y       -> EDX 16
+; fgcolor -> ECX 8
+; bgcolor -> R8D 8
 draw_char:
     push rbp
     mov rsp, rbp
-    sub 
+    sub rsp, 8
+
+    mov BYTE [rbp], di    ; Character
+    mov WORD [rbp-2], si  ; X-coordinate
+    mov WORD [rbp-4], dx  ; Y-coordinate
+    mov BYTE [rbp-5], cl  ; foreground color
+    mov BYTE [rbp-6], r8  ; background color
+
+    mov rsi, VGA_BIOS_FONT
+    mov rax, 16
+    mul rdi
+    add esi, eax
+
+    mov rcx, CHARACTER_HEIGHT
+    mov bx, WORD [rbp-2]
+    mov dx, WORD [rbp-4]
+.char_loop:
+    lodsb
+    test al, al
+    jz .skip_loop
+
+    push edi
+    push esi
+    push edx
+    
+    
+    mov edi, bx
+    mov esi, dx
+    mov di, BYTE [rbp-6]
+    movzx edx, di
+
+    test al, 128
+    jz .s1
+    
+    
+.s1:
+    test al, 64
+    jz .s2
+
+.s2:
+    test al, 32
+    jz .s3
+
+.s3:
+    test al, 16
+    jz .s4
+
+.s4:
+    test al, 8
+    jz .s5
+
+.s5:
+    test al, 4
+    jz .s6
+
+.s6:
+    test al, 2
+    jz .s7
+
+.s7:
+    test al, 1
+    jz .s8
+
+.s8:
+    
+.skip_loop:
+    pop edx
+    pop esi
+    pop edi
+    loop .char_loop
+    mov rsp, rbp
+    pop rbp
     ret
-
-[section .rodata]
-
-CHAR_MASK:
-    db 0b00000001
-    db 0b00000010
-    db 0b00000100
-    db 0b00001000
-    db 0b00010000
-    db 0b00100000
-    db 0b01000000
-    db 0b10000000
