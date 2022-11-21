@@ -3,7 +3,7 @@
 
 jmp boot
 
-KERNEL_SECTOR_COUNT equ 0x08 ; How many sectors does kernel occupies
+KERNEL_SECTOR_COUNT equ 0x10 ; How many sectors does kernel occupies
 
 KERNEL_ADDRESS equ 0x5000 ; Address where the kernel will be loaded
 BOOTLOADER_SECTOR_READ_COUNT equ 0x03 ; How many sector the bootloader occupies

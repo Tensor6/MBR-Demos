@@ -49,10 +49,10 @@ draw_char:
     mov rcx, CHARACTER_HEIGHT
 .row_loop:
     lodsb
-    test al, al
-    jz .skip_loop
+    ;test al, al
+    ;jz .skip_loop
     call .column_loop_func
-.skip_loop:
+;.skip_loop:
     loop .row_loop
 
     leave

@@ -8,5 +8,6 @@
 
 extern void set_pixel(uint16_t x, uint16_t y, uint8_t color);
 extern void draw_char(uint8_t c, uint16_t x, uint16_t y, uint8_t fgcolor, uint8_t bgcolor);
+void print_string(void* string_ptr);
 void draw_char_default(uint8_t c, uint16_t x, uint16_t y);
 void clear_screen();
