@@ -28,7 +28,7 @@ set_pixel:
 ; X       -> ESI 16  SI
 ; Y       -> EDX 16  DX
 ; fgcolor -> ECX 8   CL
-; bgcolor -> R8D 8   R8D
+; bgcolor -> R8D 8   R8B
 draw_char:
     push rbp
     mov rbp, rsp
@@ -40,33 +40,46 @@ draw_char:
     mov DWORD [rbp-16], r8d
     mov BYTE [rbp-17], 128
 
-    mov rsi, 0xA0000
+    mov rsi, VGA_BIOS_FONT
     mov ecx, edi
     mov eax, 16
     mul ecx
     add esi, eax
 
-    mov BYTE [rbp-17], 128
     mov rcx, CHARACTER_HEIGHT
 .row_loop:
-    push rcx
-    mov rcx, 8
-.col_loop:
     lodsb
-    test eax, eax
+    test al, al
     jz .skip_loop
-
-    test BYTE [rbp-17], al
-
-.use_background:
-
-
-    shr BYTE [rbp-17], 1
-    loop .col_loop
-    mov BYTE [rbp-17], 128
-    pop rcx
+    call .column_loop_func
 .skip_loop:
     loop .row_loop
 
     leave
+    ret
+
+.column_loop_func:
+    push rcx
+    push rsi
+    mov edi, DWORD [rbp-4] ; X
+    mov esi, DWORD [rbp-8] ; Y
+    mov BYTE [rbp-17], 128
+    mov ecx, 8
+.loop_col:
+    push rax
+    test BYTE [rbp-17], al
+    jz .use_background
+    mov edx, DWORD [rbp-12]
+    jmp .draw
+.use_background:
+    mov edx, DWORD [rbp-16]
+.draw:
+    call set_pixel
+    inc edi
+    shr BYTE [rbp-17], 1
+    pop rax
+    loop .loop_col
+    inc DWORD [rbp-8]
+    pop rsi
+    pop rcx
     ret
