@@ -49,7 +49,7 @@ static const uint8_t char_mask[8] = {
 void kernel_main() {
     UNUSED(letter);
     UNUSED(char_mask);
-    draw_char('A',1,2,0x30,0x00);
+    draw_char('A',1,1,0x30,0x28);
     /*set_pixel(0,0,0);
     set_pixel(1,0,0);
     set_pixel(2,0,0);

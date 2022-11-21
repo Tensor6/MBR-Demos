@@ -24,84 +24,49 @@ set_pixel:
     mov BYTE [rbx], dl
     ret
 
-; C       -> EDI 8
-; X       -> ESI 16
-; Y       -> EDX 16
-; fgcolor -> ECX 8
-; bgcolor -> R8D 8
+; C       -> EDI 8   DIL
+; X       -> ESI 16  SI
+; Y       -> EDX 16  DX
+; fgcolor -> ECX 8   CL
+; bgcolor -> R8D 8   R8D
 draw_char:
     push rbp
-    mov rsp, rbp
-    sub rsp, 8
+    mov rbp, rsp
+    sub rsp, 17
 
-    mov BYTE [rbp], di    ; Character
-    mov WORD [rbp-2], si  ; X-coordinate
-    mov WORD [rbp-4], dx  ; Y-coordinate
-    mov BYTE [rbp-5], cl  ; foreground color
-    mov BYTE [rbp-6], r8  ; background color
+    mov DWORD [rbp-4], esi
+    mov DWORD [rbp-8], edx
+    mov DWORD [rbp-12], ecx
+    mov DWORD [rbp-16], r8d
+    mov BYTE [rbp-17], 128
 
-    mov rsi, VGA_BIOS_FONT
-    mov rax, 16
-    mul rdi
+    mov rsi, 0xA0000
+    mov ecx, edi
+    mov eax, 16
+    mul ecx
     add esi, eax
 
+    mov BYTE [rbp-17], 128
     mov rcx, CHARACTER_HEIGHT
-    mov bx, WORD [rbp-2]
-    mov dx, WORD [rbp-4]
-.char_loop:
+.row_loop:
+    push rcx
+    mov rcx, 8
+.col_loop:
     lodsb
-    test al, al
+    test eax, eax
     jz .skip_loop
 
-    push edi
-    push esi
-    push edx
-    
-    
-    mov edi, bx
-    mov esi, dx
-    mov di, BYTE [rbp-6]
-    movzx edx, di
+    test BYTE [rbp-17], al
 
-    test al, 128
-    jz .s1
-    
-    
-.s1:
-    test al, 64
-    jz .s2
+.use_background:
 
-.s2:
-    test al, 32
-    jz .s3
 
-.s3:
-    test al, 16
-    jz .s4
-
-.s4:
-    test al, 8
-    jz .s5
-
-.s5:
-    test al, 4
-    jz .s6
-
-.s6:
-    test al, 2
-    jz .s7
-
-.s7:
-    test al, 1
-    jz .s8
-
-.s8:
-    
+    shr BYTE [rbp-17], 1
+    loop .col_loop
+    mov BYTE [rbp-17], 128
+    pop rcx
 .skip_loop:
-    pop edx
-    pop esi
-    pop edi
-    loop .char_loop
-    mov rsp, rbp
-    pop rbp
+    loop .row_loop
+
+    leave
     ret
