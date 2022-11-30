@@ -1,19 +1,32 @@
 [org 0x7c00]
 [bits 16]
 
-jmp boot
+%define KERNEL_SECTOR_COUNT 0x10
+%define KERNEL_ADDRESS 0x1000
 
-KERNEL_SECTOR_COUNT equ 0x10 ; How many sectors does kernel occupies
+%define PAGE_PRESENT (1 << 0)
+%define PAGE_WRITE (1 << 1)
+%define CODE_SEG 8
+%define DATA_SEG 10
 
-KERNEL_ADDRESS equ 0x5000 ; Address where the kernel will be loaded
-BOOTLOADER_SECTOR_READ_COUNT equ 0x03 ; How many sector the bootloader occupies
+Main:
+	jmp boot
+
+halt:
+	cli
+.lock:
+	hlt
+	jmp .lock
 
 boot:
 	cli
 	xor ax, ax
+	mov ss, ax
+	mov sp, Main
 	mov ds, ax
-	mov sp, bp
-	mov bp, 0x9000
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
 	sti
 
 	mov [BOOT_DRIVE], dl
@@ -25,31 +38,49 @@ boot:
 	mov bl, 0x03
 	int 0x15
 
+	call checkCPU
+
 	call disk_load
 
 	jmp LOAD_ADDRESS
 
-load_bios_font:
-	mov di, 0x0
-	push ds
-	push es
-	mov ax, 0x1130
-	mov bh, 0x06
-	int 0x10
-	push es
-	pop ds
-	mov si, bp
-	mov cx, 1024
-	mov ax, 0x9E00
-	mov es, ax
-	rep movsd
-	pop es
-	pop ds
+checkCPU:
+	pushfd
+	pop eax
+	mov ecx, eax
+	xor eax, 0x200000
+	push eax
+	popfd
+	pushfd
+	pop eax
+	xor eax, ecx
+	shr eax, 21
+	and eax, 1
+	push ecx
+	popfd
+	test eax, eax
+	jz .no_cpuid
+	mov eax, 0x80000000
+	cpuid
+	cmp eax, 0x80000001
+	jc .no_cpu64
+	mov eax, 0x80000001
+	cpuid
+	test edx, 1 << 29
+	jz .no_cpu64
 	ret
+.no_cpuid:
+	mov si, NO_CPUID
+	call print_string
+	jmp halt
+.no_cpu64:
+	mov si, NO_CPU64
+	call print_string
+	jmp halt
 
 disk_load:
 	mov ah, 0x02
-	mov al, BOOTLOADER_SECTOR_READ_COUNT
+	mov al, 3
 	xor bx, bx
 	mov es, bx
 	mov ch, 0x00
@@ -59,7 +90,7 @@ disk_load:
 	mov bx, LOAD_ADDRESS
 	int 0x13
 	jc .disk_error
-	cmp al, BOOTLOADER_SECTOR_READ_COUNT
+	cmp al, 3
 	jne .sector_error
 	ret
 .disk_error:
@@ -72,12 +103,6 @@ disk_load:
 .sector_error:
 	mov si, SECTOR_ERROR_MSG
 	call print_string
-
-halt:
-	cli
-halt2:
-	hlt
-	jmp halt2
 
 print_string:
 	push cx
@@ -113,176 +138,6 @@ print_hex_word:
     jnz .loop
     popa
     ret
-
-DISK_ERROR_MSG: db "Disk read error!",0xD,0xA,0x00
-SECTOR_ERROR_MSG: db "Sector read error!",0xD,0xA,0x00
-BOOT_DRIVE: db 0x00
-ERROR_CODE: db 0x00
-times 510-($-$$) db 0x00
-dw 0xAA55
-
-LOAD_ADDRESS:
-	call disk_reset
-	call load_kernel
-	call A20_enable
-	call load_bios_font
-	xor ax,ax
-	mov al, 0x13
-	int 0x10
-	cli
-	lgdt [gdt_descriptor]
-	mov eax, cr0
-	or eax, 0x1
-	mov cr0, eax
-	jmp CODE_SEG:start_32bit
-
-load_kernel:
-	mov ah, 0x02
-	mov al, KERNEL_SECTOR_COUNT
-	mov bx, 0x00
-	mov es, bx
-	mov ch, 0x00
-	mov cl, 0x04
-	mov dh, 0x00
-	mov dl, [BOOT_DRIVE]
-	mov bx, KERNEL_ADDRESS
-	int 0x13
-	jc .kdisk_error
-	cmp al, KERNEL_SECTOR_COUNT
-	jne .ksector_error
-	ret
-.kdisk_error:
-	mov si, KDR
-	call print_string
-	mov al, 0x0
-	push ax
-	call print_hex_word
-	jmp halt
-.ksector_error:
-	mov si, SECTOR_ERROR_MSG
-	call print_string
-	jmp halt
-
-disk_reset:
-	mov ah, 0x00
-	mov dl, [BOOT_DRIVE]
-	int 0x13
-	jc .reset_error
-	ret
-.reset_error:
-	mov si, DISK_RESET_ERROR
-	call print_string
-	ret
-
-[bits 32]
-start_32bit:
-	mov ax, DATA_SEG
-	mov ds, ax
-	mov ss, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	mov ebp, 0x90000
-	mov esp, ebp
-	pushfd
-	pop eax
-	mov ecx, eax
-	xor eax, 1 << 21
-	push eax
-	popfd
-	pushfd
-	pop eax
-	push ecx
-	popfd
-	xor eax, ecx
-	jz CPUID_unavailable
-	mov eax, 0x80000000
-	cpuid
-	cmp eax, 0x80000001
-	jb cpu64_unavailable
-	mov eax, 0x80000001
-	cpuid
-	test edx, 1 << 29
-	jz cpu64_unavailable
-	jmp switch_64bit
-
-CPUID_unavailable:
-	mov edi, 0xA0000
-	mov ecx, 0x7D00
-	mov esi, 0xC0000
-	rep movsb
-	mov edi, 0xA7D00
-	mov ecx, 0x7D00
-	mov al, 0x2C
-	rep stosb
-	jmp halt
-cpu64_unavailable:
-	mov edi, 0xA0000
-	mov ecx, 0x7D00
-	mov esi, 0xC0000
-	rep movsb
-	mov edi, 0xA7D00
-	mov ecx, 0x7D00
-	mov al, 0x28
-	rep stosb
-	jmp halt
-
-switch_64bit:
-	mov eax, cr0
-	and eax, 0x7FFFFFFF
-	mov cr0, eax
-	mov edi, 0x1000
-	mov cr3, edi
-	xor eax, eax
-	mov ecx, 0x1000
-	rep stosd
-	mov edi, cr3
-
-	mov DWORD [edi], 0x2003
-	add edi, 0x1000
-	mov DWORD [edi], 0x3003
-	add edi, 0x1000
-	mov DWORD [edi], 0x4003
-	add edi, 0x1000
-	mov ebx, 0x00000003
-	mov ecx, 0x200
-switch_64bit_set_entry:
-	mov DWORD [edi], ebx
-	add ebx, 0x1000
-	add edi, 8
-	loop switch_64bit_set_entry
-
-switch_64bit_enable_paging:
-	mov eax, cr4
-	or eax, 1 << 5
-	mov cr4, eax
-	mov ecx, 0xC0000080
-	rdmsr
-	or eax, 1 << 8
-	wrmsr
-	mov eax, cr0
-	or eax, 1 << 31
-	mov cr0, eax
-	lgdt [gdt_descriptor]
-	jmp CODE_SEG:start64
-
-[bits 64]
-
-start64:
-	mov ax, DATA_SEG
-	mov ds, ax
-	mov ss, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	mov ebp, 0x90000
-	mov esp, ebp
-
-	jmp KERNEL_ADDRESS
-
-times 1024 - ($ - $$) db 0x00
-
-[bits 16]
 
 A20_check:
 	push ds
@@ -362,38 +217,158 @@ A20_enable:
 	popa
 	ret
 
-gdt_start:
-gdt_null:
-	dd 0x0
-	dd 0x0
+DISK_ERROR_MSG: db "Disk read error!",0xD,0xA,0x00
+SECTOR_ERROR_MSG: db "Sector read error!",0xD,0xA,0x00
+NO_CPUID: db "CPUID is not supported!",0x00
+NO_CPU64: db "Long mode (64-bit) is not supported!",0x00
+BOOT_DRIVE: db 0x00
 
-gdt_code:
-	dw 0xFFFF
-	dw 0x0
-	db 0x0
-	db 10011010b
-	db 11001111b
-	db 0x0
+times 510-($-$$) db 0x00
+dw 0xAA55
 
-gdt_data:
-	dw 0xFFFF
-	dw 0x0
-	db 0x0
-	db 10010010b
-	db 11001111b
-	db 0x0
+[bits 16]
 
-gdt_end:
-gdt_descriptor:
-	dw gdt_end - gdt_start - 1
-	dd gdt_start
+LOAD_ADDRESS:
+	call disk_reset
+	call load_kernel
+	call A20_enable
+	call load_bios_font
+	mov edi, 0x9000	
+	jmp start64
 
-CODE_SEG equ gdt_code - gdt_start
-DATA_SEG equ gdt_data - gdt_start
+load_bios_font:
+	mov di, 0x0
+	push ds
+	push es
+	mov ax, 0x1130
+	mov bh, 0x06
+	int 0x10
+	push es
+	pop ds
+	mov si, bp
+	mov cx, 1024
+	mov ax, 0x9E00
+	mov es, ax
+	rep movsd
+	pop es
+	pop ds
+	ret
 
+load_kernel:
+	mov ah, 0x02
+	mov al, KERNEL_SECTOR_COUNT
+	mov bx, 0x00
+	mov es, bx
+	mov ch, 0x00
+	mov cl, 0x04
+	mov dh, 0x00
+	mov dl, [BOOT_DRIVE]
+	mov bx, KERNEL_ADDRESS
+	int 0x13
+	jc .kdisk_error
+	cmp al, KERNEL_SECTOR_COUNT
+	jne .ksector_error
+	ret
+.kdisk_error:
+	mov si, KDR
+	call print_string
+	mov al, 0x0
+	push ax
+	call print_hex_word
+	jmp halt
+.ksector_error:
+	mov si, SECTOR_ERROR_MSG
+	call print_string
+	jmp halt
+
+disk_reset:
+	mov ah, 0x00
+	mov dl, [BOOT_DRIVE]
+	int 0x13
+	jc .reset_error
+	ret
+.reset_error:
+	mov si, DISK_RESET_ERROR
+	call print_string
+	ret
+
+
+
+start64:
+	push di
+	mov ecx, 0x1000
+	xor eax, eax
+	cld
+	rep stosd
+	pop di
+	lea eax, [es:di + 0x1000]
+	or eax, PAGE_PRESENT | PAGE_WRITE
+	mov [es:di], eax
+	lea eax, [es:di + 0x2000]
+	or eax, PAGE_PRESENT | PAGE_WRITE
+	mov [es:di + 0x1000], eax
+	lea eax, [es:di + 0x3000]
+	or eax, PAGE_PRESENT | PAGE_WRITE
+	mov [es:di + 0x2000], eax
+	push di
+	lea di, [di + 0x3000]
+	mov eax, PAGE_PRESENT | PAGE_WRITE
+.loop_pages:
+	mov [es:di], eax
+	add eax, 0x1000
+	add di, 8
+	cmp eax, 0x200000
+	jc .loop_pages
+	pop di
+	mov al, 0xFF
+	out 0xA1, al
+	out 0x21, al
+	lidt [NULL_IDT]
+	mov eax, 0b10100000
+	mov cr4, eax
+	mov edx, edi
+	mov cr3, edx
+	mov ecx, 0xC0000080
+	rdmsr
+	or eax, 0x00000100
+	wrmsr
+	mov ebx, cr0
+	or ebx, 0x80000001
+	mov cr0, ebx
+	lgdt [GDT_Pointer]
+	jmp CODE_SEG:Long_mode
+[bits 64]
+
+Long_mode:
+	mov ax, DATA_SEG
+	mov ds, ax
+	mov ss, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov rbp, 0x90000
+	mov rsp, rbp
+	jmp KERNEL_ADDRESS
 
 KDR: db "Failed to read the kernel!",0xA,0xD,0x00
 DISK_RESET_ERROR: db "Disk reset fail!",0xA,0x00
 NO_A20: db "Failed to enable A20!",0x00
 
+GDT:
+	dq 0x0
+	dq 0x00209A0000000000
+    dq 0x0000920000000000
+ALIGN 4
+	dw 0
+
+GDT_Pointer:
+	dw $ - GDT - 1
+	dd GDT
+
+ALIGN 4
+NULL_IDT:
+	dw 0
+	dd 0
+
+times 1024 - ($ - $$) db 0x00
 times 1536 - ($ - $$) db 0x00

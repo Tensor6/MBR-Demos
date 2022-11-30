@@ -6,10 +6,6 @@ global memory_set
 global read_tsc
 global stop_kernel
 
-
-extern print_string
-global test
-
 memory_copy:
     mov ecx, edx
     rep movsb
@@ -32,11 +28,3 @@ stop_kernel:
 .halt:
     hlt
     jmp .halt
-
-test:
-    mov rdi, TEXT
-    call print_string
-    ret
-[section .rodata]
-
-TEXT: db "Hello, World!",0x0
