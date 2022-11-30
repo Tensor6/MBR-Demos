@@ -104,6 +104,7 @@ draw_blank:
 .end:
     ret
 
+
 disk_reset:
     mov dl, [BOOT_DRIVE]
     mov ah, 0x0
@@ -175,7 +176,7 @@ halt:
     jmp .hl
 
 DATA_LOADING: db "Loading image...",0xA,0xD,0x0
-DATA_LOAD: db "Image has been loaded into RAM!",0xA,0xD,0xA,0xD,"Press X to draw!",0xA,0xD,"Press ESC to return!",0x0
+DATA_LOAD: db "Image is loaded!",0xA,0xD,0xA,0xD,"Press X to draw!",0xA,0xD,"Press ESC to return!",0x0
 DISK_ERROR: db "Failed to load image from disk!",0xA,0xD,"Error code: ",0x00
 BOOT_DRIVE: db 0x00
 GRAPHICS: db 0x00

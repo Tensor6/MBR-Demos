@@ -33,19 +33,16 @@ draw_char:
     push rbp
     mov rbp, rsp
     sub rsp, 17
-
     mov DWORD [rbp-4], esi
     mov DWORD [rbp-8], edx
     mov DWORD [rbp-12], ecx
     mov DWORD [rbp-16], r8d
     mov BYTE [rbp-17], 128
-
     mov rsi, VGA_BIOS_FONT
     mov ecx, edi
     mov eax, 16
     mul ecx
     add esi, eax
-
     mov rcx, CHARACTER_HEIGHT
 .row_loop:
     lodsb
@@ -54,10 +51,8 @@ draw_char:
     call .column_loop_func
 ;.skip_loop:
     loop .row_loop
-
     leave
     ret
-
 .column_loop_func:
     push rcx
     push rsi

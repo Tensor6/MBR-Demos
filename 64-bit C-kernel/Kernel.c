@@ -18,6 +18,4 @@ void kernel_main() {
     draw_char('k',8*6,0,0x07,0);
     draw_char('o',8*7,0,0x07,0);
     draw_char('?',8*8,0,0x07,0);
-    
-    //stop_kernel();
 }

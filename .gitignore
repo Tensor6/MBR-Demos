@@ -7,3 +7,15 @@
 64-bit C-kernel/Objects/Kernel_final.bin
 64-bit C-kernel/Objects/Kernel.o
 64-bit C-kernel/Objects/Video_driver.o
+64-bit C-kernel/Final.bin
+64-bit C-kernel/Zeros.bin
+64-bit C-kernel/Objects/ATA_Driver.o
+64-bit C-kernel/Objects/Bootloader.bin
+64-bit C-kernel/Objects/Kernel_assembly.o
+64-bit C-kernel/Objects/Kernel_final.bin
+64-bit C-kernel/Objects/Kernel.o
+64-bit C-kernel/Objects/Video_driver-asm.o
+DrawScreenImage/DrawScreen.bin
+DrawScreenImage/Final.bin
+DrawScreenImage/image.bin
+DrawScreenImage/image2.bmp
