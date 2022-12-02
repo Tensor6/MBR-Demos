@@ -1,7 +1,7 @@
 ENTRY(_start)
 OUTPUT_FORMAT("binary")
 SECTIONS {
-    . = 0x00005000;
+    . = 0x00001000;
     _start = .;
     .text :
     {
