@@ -381,6 +381,16 @@ times 1024 - ($ - $$) db 0x00
 [bits 16]
 
 VESA_video_mode_initialize:
+    push es
+    mov ax, 0x4F01
+    mov cx, 0x0118
+    mov bx, 0x9000
+    mov es, bx
+    xor si, si
+    int 0x10
+    pop es
+    cmp ax, 0x004F
+    jne video_fail
     mov ax, 0x4F02
     mov bx, 0x4118
     int 0x10
