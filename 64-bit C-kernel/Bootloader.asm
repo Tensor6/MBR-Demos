@@ -7,7 +7,7 @@
 %define PAGE_PRESENT (1 << 0)
 %define PAGE_WRITE (1 << 1)
 %define CODE_SEG 8
-%define DATA_SEG 10
+%define DATA_SEG 16
 
 Main:
 	jmp boot
@@ -226,13 +226,15 @@ BOOT_DRIVE: db 0x00
 times 510-($-$$) db 0x00
 dw 0xAA55
 
-[bits 16]
-
 LOAD_ADDRESS:
 	call disk_reset
 	call load_kernel
 	call A20_enable
 	call load_bios_font
+
+	mov ax, 0x0013
+	int 0x10
+
 	mov edi, 0x9000	
 	jmp start64
 
@@ -257,12 +259,12 @@ load_bios_font:
 load_kernel:
 	mov ah, 0x02
 	mov al, KERNEL_SECTOR_COUNT
-	mov bx, 0x00
-	mov es, bx
 	mov ch, 0x00
 	mov cl, 0x04
 	mov dh, 0x00
 	mov dl, [BOOT_DRIVE]
+	xor bx, bx
+	mov es, bx
 	mov bx, KERNEL_ADDRESS
 	int 0x13
 	jc .kdisk_error
@@ -354,6 +356,9 @@ KDR: db "Failed to read the kernel!",0xA,0xD,0x00
 DISK_RESET_ERROR: db "Disk reset fail!",0xA,0x00
 NO_A20: db "Failed to enable A20!",0x00
 
+
+times 1024 - ($ - $$) db 0x00
+
 GDT:
 	dq 0x0
 	dq 0x00209A0000000000
@@ -370,5 +375,4 @@ NULL_IDT:
 	dw 0
 	dd 0
 
-times 1024 - ($ - $$) db 0x00
 times 1536 - ($ - $$) db 0x00
