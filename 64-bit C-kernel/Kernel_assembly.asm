@@ -3,13 +3,10 @@
 
 global memcpy8
 global memset8
-
 global memcpy16
 global memset16
-
 global memcpy32
 global memset32
-
 global memcpy64
 global memset64
 

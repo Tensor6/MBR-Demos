@@ -21,7 +21,5 @@ void kernel_main() {
     //memory_set((void*) 0xFFF000, 'A', 4000);
     //draw_char_default('A',0,0);
     //draw_char_default('B',0,CHARACTER_HEIGHT);
-    for (int i = 0; i < 0xFFFF; i++) {
-        set_pixel(i,0,0xFF);
-    }
+    memset64((void*) 0xA0000, 0xFFFFFFFFFFFFFFFF, 0x1FFFF / 2);
 }

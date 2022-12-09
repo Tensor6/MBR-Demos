@@ -6,6 +6,7 @@
 
 %define VESA_INFO_STRUCT 0xFC00
 %define VESA_MODE_INFO_STRUCT 0xFE00 
+%define VESA_VIDEO_MODE 0x0118
 
 %define PAGE_PRESENT (1 << 0)
 %define PAGE_WRITE (1 << 1)
@@ -382,17 +383,26 @@ times 1024 - ($ - $$) db 0x00
 
 VESA_video_mode_initialize:
     push es
-    mov ax, 0x4F01
-    mov cx, 0x0118
-    mov bx, 0x9000
+    mov ax, 0x4F00
+    xor bx, bx
     mov es, bx
-    xor si, si
+    mov di, VESA_INFO_STRUCT
+    int 0x10
+    pop es
+    cmp ax, 0x004F
+    jne no_vesa
+    push es
+    mov ax, 0x4F01
+    mov cx, VESA_VIDEO_MODE
+    xor bx, bx
+    mov es, bx
+    mov di, VESA_MODE_INFO_STRUCT
     int 0x10
     pop es
     cmp ax, 0x004F
     jne video_fail
     mov ax, 0x4F02
-    mov bx, 0x4118
+    mov bx, (0x4000 | VESA_VIDEO_MODE)
     int 0x10
     cmp ax, 0x004F
     jne video_fail
@@ -401,8 +411,18 @@ VESA_video_mode_initialize:
 video_fail:
 	mov si, VIDEO_ERROR
 	call print_string
+    push ax
+    call print_hex_word
 	jmp halt
 
-VIDEO_ERROR: db "Failed to set VESA video mode (1024 x 768 @ 16M)!",0x00
+no_vesa:
+    mov si, NO_VESA
+    call print_string
+    push ax
+    call print_hex_word
+    jmp halt
+
+VIDEO_ERROR: db "VESA video service error!",0xA,0xD,0x00
+NO_VESA: db "BIOS does not support VESA video services!",0xA,0xD,0x00
 
 times 1536 - ($ - $$) db 0x00

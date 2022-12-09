@@ -3,49 +3,41 @@
 #include "../Kernel.h"
 #include "Video_driver.h"
 
-struct vbe_mode_info_structure {
-    uint16_t attributes;
-    uint8_t window_a;
-    uint8_t window_b;
-    uint16_t granularity;
-    uint16_t window_size;
-    uint16_t segment_a;
-    uint16_t segment_b;
-    uint32_t win_func_ptr;
-    uint16_t pitch;
-    uint16_t width;
-    uint16_t height;
-    uint8_t w_char;
-    uint8_t y_char;
-    uint8_t planes;
-    uint8_t bpp;
-    uint8_t banks;
-    uint8_t memory_model;
-    uint8_t bank_size;
-    uint8_t image_pages;
-    uint8_t reserved0;
-    uint8_t red_mask;
-    uint8_t red_position;
-    uint8_t green_mask;
-    uint8_t green_position;
-    uint8_t blue_mask;
-    uint8_t blue_position;
-    uint8_t reserved_mask;
-    uint8_t reserved_position;
-    uint8_t direct_color_attributes;
-    uint32_t framebuffer;
-    uint32_t off_screen_mem_off;
-    uint16_t off_screen_mem_size;
-    uint8_t reserved1[206];
-} __attribute__ ((packed));
+#define VESA_INFO_STRUCT 0xFC00
+#define VESA_MODE_INFO_STRUCT 0xFE00 
 
 struct vbe_mode_info_structure* vbe_info;
+struct vbe_info_structure* vesa_info;
 
 void init_video(){
-	vbe_info = (struct vbe_mode_info_structure*) 0x90000;
-	if (vbe_info->attributes & 0x40 == 0){
-		*((uint32_t*) vbe_info->framebuffer) = 0x0000FF00;
-		stop_kernel();
-	}
+	vbe_info = (struct vbe_mode_info_structure*) VESA_MODE_INFO_STRUCT;
+    vesa_info = (struct vbe_info_structure*) VESA_INFO_STRUCT;
+
+    if ((vbe_info->attributes & 0x80) == 0 && (vbe_info->bpp == 24 || vbe_info->bpp == 32)){
+        memset64((void*) 0xA0000, 0xFF00FF00FF00FF00, 0xFFFF);
+        stop_kernel();
+    }
+    /*uint32_t* r = (uint32_t*) (uint64_t) vbe_info->framebuffer;
+    *r = 0xFF00FF00;*/
+   //memset32((void*)(uint64_t) vbe_info->framebuffer, 0xFFFFFF00, 1024*768);
 }
 
+uint16_t getWidth(){
+    return vbe_info->width;
+};
+
+uint16_t getHeight(){
+    return vbe_info->height;
+};
+
+uint16_t getPitch(){
+    return vbe_info->pitch;
+};
+
+void set_pixel(uint16_t x, uint16_t y, uint32_t color);
+void draw_char(uint8_t c, uint16_t x, uint16_t y, uint8_t fgcolor, uint8_t bgcolor);
+void draw_char_default(uint8_t c, uint16_t x, uint16_t y);
+
+void clear_screen(){
+
+};

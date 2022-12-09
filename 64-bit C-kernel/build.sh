@@ -4,7 +4,6 @@ nasm Bootloader.asm -f bin -o ./Objects/Bootloader.bin
 nasm Entry.asm -f elf64 -o ./Objects/Entry.o
 nasm Kernel_assembly.asm -f elf64 -o ./Objects/Kernel_assembly.o
 nasm ./CPU/Ports.asm -f elf64 -o ./Objects/Ports.o
-nasm ./Drivers/Video_driver.asm -f elf64 -o ./Objects/Video_driver-asm.o
 #nasm ./CPU/Interrupts.asm -f elf64 -o ./Objects/Interrupts.o
 
 for i in *.c 
