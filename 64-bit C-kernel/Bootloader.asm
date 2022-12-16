@@ -5,8 +5,28 @@
 %define KERNEL_ADDRESS 0x1000
 
 %define VESA_INFO_STRUCT 0xFC00
-%define VESA_MODE_INFO_STRUCT 0xFE00 
-%define VESA_VIDEO_MODE 0x0118
+%define VESA_MODE_INFO_STRUCT 0xFE00
+
+
+; MODE    RESOLUTION  BITS PER PIXEL  MAXIMUM COLORS
+; 0x0100  640x400     8               256
+; 0x0101  640x480     8               256
+; 0x0102  800x600     4               16
+; 0x0103  800x600     8               256
+; 0x010D  320x200     15              32k
+; 0x010E  320x200     16              64k
+; 0x010F  320x200     24/32*          16m
+; 0x0110  640x480     15              32k
+; 0x0111  640x480     16              64k
+; 0x0112  640x480     24/32*          16m
+; 0x0113  800x600     15              32k
+; 0x0114  800x600     16              64k
+; 0x0115  800x600     24/32*          16m
+; 0x0116  1024x768    15              32k
+; 0x0117  1024x768    16              64k
+; 0x0118  1024x768    24/32*          16m
+
+%define VESA_VIDEO_MODE 0x0118 
 
 %define PAGE_PRESENT (1 << 0)
 %define PAGE_WRITE (1 << 1)
@@ -352,7 +372,10 @@ Long_mode:
     mov gs, ax
     mov rbp, 0x90000
     mov rsp, rbp
-    jmp KERNEL_ADDRESS
+    ;jmp KERNEL_ADDRESS
+
+    mov QWORD [0xA0000], ~0
+    jmp halt
 
 GDT:
     dq 0x0
@@ -382,47 +405,76 @@ times 1024 - ($ - $$) db 0x00
 [bits 16]
 
 VESA_video_mode_initialize:
-    push es
     mov ax, 0x4F00
     xor bx, bx
     mov es, bx
     mov di, VESA_INFO_STRUCT
     int 0x10
-    pop es
     cmp ax, 0x004F
-    jne no_vesa
-    push es
+    jne .no_vesa
+    mov si, VIDEO_ERROR ; First 4 bytes are "VESA"
+    mov di, VESA_INFO_STRUCT
+    cmpsw
+    jne .no_vesa
+    mov ax, [VESA_INFO_STRUCT + 4]
+    cmp ax, 0x200
+    jb .no_vesa
+    call check_video_mode_support
     mov ax, 0x4F01
     mov cx, VESA_VIDEO_MODE
     xor bx, bx
     mov es, bx
     mov di, VESA_MODE_INFO_STRUCT
     int 0x10
-    pop es
     cmp ax, 0x004F
-    jne video_fail
+    jne .video_fail
     mov ax, 0x4F02
     mov bx, (0x4000 | VESA_VIDEO_MODE)
     int 0x10
     cmp ax, 0x004F
-    jne video_fail
+    jne .video_fail
 	ret
-
-video_fail:
-	mov si, VIDEO_ERROR
-	call print_string
-    push ax
-    call print_hex_word
-	jmp halt
-
-no_vesa:
+.no_vesa:
     mov si, NO_VESA
+.error_code:
     call print_string
     push ax
     call print_hex_word
     jmp halt
+.video_fail:
+	mov si, VIDEO_ERROR
+	jmp .error_code
+
+
+check_video_mode_support:
+    push ds
+    mov WORD ax, [VESA_INFO_STRUCT + 16]
+    mov ds, ax
+    mov WORD si, [VESA_INFO_STRUCT + 14]
+.loop:
+    lodsw
+    cmp ax, VESA_VIDEO_MODE
+    je .end
+    cmp ax, 0xFFFF
+    je .video_mode_no_support
+    jmp .loop
+.end:
+    pop ds
+    ret
+.video_mode_no_support:
+    pop ds
+    mov si, VM_NO_SUPPORT
+    call print_string
+    push DWORD VESA_VIDEO_MODE
+    call print_hex_word
+    mov si, VM_NO_SUPPORT2
+    call print_string
+    jmp halt
+    
 
 VIDEO_ERROR: db "VESA video service error!",0xA,0xD,0x00
-NO_VESA: db "BIOS does not support VESA video services!",0xA,0xD,0x00
+NO_VESA: db "BIOS does not support VESA 2.0 video services!",0xA,0xD,0x00
+VM_NO_SUPPORT: db "Desired video mode (",0x00
+VM_NO_SUPPORT2: db ") not supported by BIOS",0xD,0xA,0x00
 
 times 1536 - ($ - $$) db 0x00
