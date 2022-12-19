@@ -372,10 +372,7 @@ Long_mode:
     mov gs, ax
     mov rbp, 0x90000
     mov rsp, rbp
-    ;jmp KERNEL_ADDRESS
-
-    mov QWORD [0xA0000], ~0
-    jmp halt
+    jmp KERNEL_ADDRESS
 
 GDT:
     dq 0x0
@@ -414,7 +411,7 @@ VESA_video_mode_initialize:
     jne .no_vesa
     mov si, VIDEO_ERROR ; First 4 bytes are "VESA"
     mov di, VESA_INFO_STRUCT
-    cmpsw
+    cmpsd
     jne .no_vesa
     mov ax, [VESA_INFO_STRUCT + 4]
     cmp ax, 0x200
@@ -428,6 +425,9 @@ VESA_video_mode_initialize:
     int 0x10
     cmp ax, 0x004F
     jne .video_fail
+    mov WORD ax, [di]
+    test ax, 0x80
+    jz .no_linear
     mov ax, 0x4F02
     mov bx, (0x4000 | VESA_VIDEO_MODE)
     int 0x10
@@ -444,6 +444,10 @@ VESA_video_mode_initialize:
 .video_fail:
 	mov si, VIDEO_ERROR
 	jmp .error_code
+.no_linear:
+    mov si, NO_LINEAR
+    call print_string
+    jmp halt
 
 
 check_video_mode_support:
@@ -474,6 +478,7 @@ check_video_mode_support:
 
 VIDEO_ERROR: db "VESA video service error!",0xA,0xD,0x00
 NO_VESA: db "BIOS does not support VESA 2.0 video services!",0xA,0xD,0x00
+NO_LINEAR: db "Video mode does not support linear framebuffer!",0x00
 VM_NO_SUPPORT: db "Desired video mode (",0x00
 VM_NO_SUPPORT2: db ") not supported by BIOS",0xD,0xA,0x00
 

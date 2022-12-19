@@ -12,6 +12,7 @@ global memset64
 
 global read_tsc
 global stop_kernel
+global reset_cpu
 
 memcpy8:
     mov ecx, edx
@@ -47,13 +48,13 @@ memset32:
     ret
 
 memcpy64:
-    mov ecx, edx
+    mov rcx, rdx
     rep movsq
     ret
 
 memset64:
-    mov ecx, edx
-    mov eax, esi
+    mov rcx, rdx
+    mov rax, rsi
     rep stosq
     ret
 
@@ -68,3 +69,10 @@ stop_kernel:
 .halt:
     hlt
     jmp .halt
+
+reset_cpu:
+    mov rdi, 0xCC80
+    mov QWORD [rdi], 0
+    mov QWORD [rdi + 8], 0
+    lidt [rdi]
+    int 0x00
