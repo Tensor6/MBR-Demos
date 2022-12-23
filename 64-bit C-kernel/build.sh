@@ -4,7 +4,7 @@ nasm Bootloader.asm -f bin -o ./Objects/Bootloader.bin
 nasm Entry.asm -f elf64 -o ./Objects/Entry.o
 nasm Kernel_assembly.asm -f elf64 -o ./Objects/Kernel_assembly.o
 nasm ./CPU/Ports.asm -f elf64 -o ./Objects/Ports.o
-#nasm ./CPU/Interrupts.asm -f elf64 -o ./Objects/Interrupts.o
+nasm ./CPU/Interrupts.asm -f elf64 -o ./Objects/Interrupts-asm.o
 
 for i in *.c 
 do
