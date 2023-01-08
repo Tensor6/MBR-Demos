@@ -176,7 +176,6 @@ LOAD_ADDRESS:
     call A20_enable
     call load_bios_font
 	call VESA_video_mode_initialize
-    mov edi, 0x9000
     jmp start64
 
 load_bios_font:
@@ -236,7 +235,9 @@ disk_reset:
     ret
 
 build_PML4:
-    
+    mov es, 0x1000
+    xor edi, edi
+    ; TODO: Finish this function
 
 start64:
     call build_PML4
