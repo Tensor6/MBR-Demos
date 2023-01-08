@@ -3,5 +3,5 @@
 
 
 extern void stop_kernel();
-extern void reset_cpu();
+__attribute__((noreturn)) extern void reset_cpu();
 extern uint64_t read_tsc();

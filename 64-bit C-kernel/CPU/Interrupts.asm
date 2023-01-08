@@ -169,9 +169,9 @@ isr_common:
     iretq
 
 irq_common:
-    push rdi
-    mov rdi, rsp
-    add rdi, 8
+    ;push rdi
+    ;mov rdi, rsp
+    ;add rdi, 8
     push rax
     push rcx
     push rdx
@@ -217,7 +217,7 @@ irq_common:
     pop rdx
     pop rcx
     pop rax
-    pop rdi
+    ;pop rdi
 
     add rsp, 10
     sti

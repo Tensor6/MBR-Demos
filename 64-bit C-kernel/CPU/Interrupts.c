@@ -29,6 +29,8 @@ void init_interrupts(){
 
 void ISR_handler(struct interrupt_frame* frame){
     UNUSED(frame); // TODO: print exception message
+    memset32((void*)0xA0000 + 8192, 0xFFFFFF00, 1024);
+    stop_kernel();
 };
 
 void IRQ_handler(struct interrupt_frame* frame){

@@ -6,9 +6,8 @@
 #include "Memory.h"
 
 void kernel_main() {
-                  //AARRGGBB
-    set_pixel(0,0,0xFF000000);
-    set_pixel(1,1,0x00FF0000);
-    set_pixel(2,2,0x0000FF00);
-    set_pixel(2,2,0x000000FF);
+    uint32_t* fb = (uint32_t*) (uint64_t) getModeInfo()->framebuffer;
+    for (uint16_t i = 0; i < 500; i += sizeof(uint32_t*)) {
+        *(fb + i) = 0xFFFFFF00;
+    }
 }

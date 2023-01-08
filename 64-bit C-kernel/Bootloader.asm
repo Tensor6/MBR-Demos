@@ -26,7 +26,7 @@
 ; 0x0117  1024x768    16              64k
 ; 0x0118  1024x768    24/32*          16m
 
-%define VESA_VIDEO_MODE 0x0118 
+%define VESA_VIDEO_MODE 0x0118
 
 %define PAGE_PRESENT (1 << 0)
 %define PAGE_WRITE (1 << 1)
@@ -63,7 +63,6 @@ boot:
     int 0x15
 
     call checkCPU
-
     call disk_load
 
     jmp LOAD_ADDRESS
@@ -129,7 +128,6 @@ disk_load:
     call print_string
 
 print_string:
-    push cx
     pusha
 .print_string_loop:
     lodsb
@@ -140,7 +138,6 @@ print_string:
     jmp .print_string_loop
 .print_string_ret:
     popa
-    pop cx
     ret
 
 print_hex_word:
@@ -163,88 +160,11 @@ print_hex_word:
     popa
     ret
 
-A20_check:
-    push ds
-    push es
-    push di
-    push si
-    cli
-    xor ax, ax
-    mov es, ax
-    not ax
-    mov ds, ax
-    mov di, 0x0500
-    mov si, 0x0510
-    mov al, BYTE [es:di]
-    push ax
-    mov al, BYTE [ds:si]
-    push ax
-    mov BYTE [es:di], 0x00
-    mov BYTE [ds:si], 0xFF
-    cmp BYTE [es:di], 0xFF
-    pop ax
-    mov BYTE [ds:si], al
-    pop ax
-    mov BYTE [es:di], al
-    clc
-    je .end_check_a20
-    stc
-.end_check_a20:
-    pop si
-    pop di
-    pop es
-    pop ds
-    ret
-
-A20_enable:
-    pusha
-    pushf
-    call A20_check
-    jc .enable_exit
-
-    mov ax, 0x2403
-    int 0x15
-    jb .next_stage
-    cmp ah, 0
-    jnz .next_stage
-    mov ax, 0x2402
-    int 0x15
-    jb .next_stage
-    cmp ah, 0
-    jnz .next_stage
-    cmp al, 1
-    jz .next_stage
-    mov ax, 0x2401
-    int 0x15
-.next_stage:
-    call A20_check
-    jc .enable_exit
-
-    in al, 0x92
-    or al, 2
-    out 0x92, al
-
-    call A20_check
-    jc .enable_exit
-
-    in al, 0xEE
-
-    call A20_check
-    jc .enable_exit
-
-    mov si, NO_A20
-    call print_string
-    jmp halt
-
-.enable_exit:
-    popf
-    popa
-    ret
-
 DISK_ERROR_MSG: db "Disk read error!",0xD,0xA,0x00
 SECTOR_ERROR_MSG: db "Sector read error!",0xD,0xA,0x00
 NO_CPUID: db "CPUID is not supported!",0x00
 NO_CPU64: db "Long mode (64-bit) is not supported!",0x00
+MCF: db "Memory check failed or not enough memory!",0x00
 BOOT_DRIVE: db 0x00
 
 times 510-($-$$) db 0x00
@@ -255,12 +175,9 @@ LOAD_ADDRESS:
     call load_kernel
     call A20_enable
     call load_bios_font
-
 	call VESA_video_mode_initialize
-
-    mov edi, 0x9000    
+    mov edi, 0x9000
     jmp start64
-
 
 load_bios_font:
     mov di, 0x0
@@ -318,32 +235,11 @@ disk_reset:
     call print_string
     ret
 
+build_PML4:
+    
+
 start64:
-    push di
-    mov ecx, 0x1000
-    xor eax, eax
-    cld
-    rep stosd
-    pop di
-    lea eax, [es:di + 0x1000]
-    or eax, PAGE_PRESENT | PAGE_WRITE
-    mov [es:di], eax
-    lea eax, [es:di + 0x2000]
-    or eax, PAGE_PRESENT | PAGE_WRITE
-    mov [es:di + 0x1000], eax
-    lea eax, [es:di + 0x3000]
-    or eax, PAGE_PRESENT | PAGE_WRITE
-    mov [es:di + 0x2000], eax
-    push di
-    lea di, [di + 0x3000]
-    mov eax, PAGE_PRESENT | PAGE_WRITE
-.loop_pages:
-    mov [es:di], eax
-    add eax, 0x1000
-    add di, 8
-    cmp eax, 0x200000
-    jc .loop_pages
-    pop di
+    call build_PML4
     mov al, 0xFF
     out 0xA1, al
     out 0x21, al
@@ -469,17 +365,99 @@ check_video_mode_support:
     pop ds
     mov si, VM_NO_SUPPORT
     call print_string
-    push DWORD VESA_VIDEO_MODE
+    push WORD VESA_VIDEO_MODE
     call print_hex_word
     mov si, VM_NO_SUPPORT2
     call print_string
     jmp halt
     
+A20_check:
+    push ds
+    push es
+    push di
+    push si
+    cli
+    xor ax, ax
+    mov es, ax
+    not ax
+    mov ds, ax
+    mov di, 0x0500
+    mov si, 0x0510
+    mov al, BYTE [es:di]
+    push ax
+    mov al, BYTE [ds:si]
+    push ax
+    mov BYTE [es:di], 0x00
+    mov BYTE [ds:si], 0xFF
+    cmp BYTE [es:di], 0xFF
+    pop ax
+    mov BYTE [ds:si], al
+    pop ax
+    mov BYTE [es:di], al
+    clc
+    je .end_check_a20
+    stc
+.end_check_a20:
+    pop si
+    pop di
+    pop es
+    pop ds
+    ret
+
+A20_enable:
+    pusha
+    pushf
+    call A20_check
+    jc .enable_exit
+
+    mov ax, 0x2403
+    int 0x15
+    jb .next_stage
+    cmp ah, 0
+    jnz .next_stage
+    mov ax, 0x2402
+    int 0x15
+    jb .next_stage
+    cmp ah, 0
+    jnz .next_stage
+    cmp al, 1
+    jz .next_stage
+    mov ax, 0x2401
+    int 0x15
+.next_stage:
+    call A20_check
+    jc .enable_exit
+
+    in al, 0x92
+    or al, 2
+    out 0x92, al
+
+    call A20_check
+    jc .enable_exit
+
+    in al, 0xEE
+
+    call A20_check
+    jc .enable_exit
+
+    mov si, NO_A20
+    call print_string
+    jmp halt
+
+.enable_exit:
+    popf
+    popa
+    ret
 
 VIDEO_ERROR: db "VESA video service error!",0xA,0xD,0x00
 NO_VESA: db "BIOS does not support VESA 2.0 video services!",0xA,0xD,0x00
 NO_LINEAR: db "Video mode does not support linear framebuffer!",0x00
-VM_NO_SUPPORT: db "Desired video mode (",0x00
-VM_NO_SUPPORT2: db ") not supported by BIOS",0xD,0xA,0x00
+VM_NO_SUPPORT: db "video mode ( 0x",0x00
+VM_NO_SUPPORT2: db " ) not supported by BIOS",0xD,0xA,0x00
 
 times 1536 - ($ - $$) db 0x00
+;pml4:
+;    dq PTE_PRESENT | PTE_WRITE | PTE_USER
+;    resb 4096
+;
+;times 2048 - ($ - $$) db 0x00
