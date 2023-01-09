@@ -28,8 +28,8 @@
 
 %define VESA_VIDEO_MODE 0x0118
 
-%define PAGE_PRESENT (1 << 0)
-%define PAGE_WRITE (1 << 1)
+%define PAGE_ATTR 0x03
+
 %define CODE_SEG 8
 %define DATA_SEG 16
 
@@ -233,14 +233,60 @@ disk_reset:
     mov si, DISK_RESET_ERROR
     call print_string
     ret
-
-build_PML4:
-    mov es, 0x1000
-    xor edi, edi
-    ; TODO: Finish this function
-
+    
 start64:
-    call build_PML4
+    mov di, 0x9000
+    push di
+	mov ecx, 0x1000
+	xor eax, eax
+	cld
+	rep stosd
+	pop di
+	lea eax, [es:di + 0x1000]
+	or eax, PAGE_ATTR
+	mov [es:di], eax
+	lea eax, [es:di + 0x2000]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x1000], eax
+
+	lea eax, [es:di + 0x3000]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x2000], eax
+
+    lea eax, [es:di + 0x3008]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x2008], eax
+
+    lea eax, [es:di + 0x3010]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x2010], eax
+
+    lea eax, [es:di + 0x3018]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x2018], eax
+
+    lea eax, [es:di + 0x3026]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x2026], eax
+
+    lea eax, [es:di + 0x302E]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x202E], eax
+
+    lea eax, [es:di + 0x3036]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x2036], eax
+
+	push di
+	lea di, [di + 0x3000]
+	mov eax, PAGE_ATTR
+.loop_pages:
+	mov [es:di], eax
+	add eax, 0x1000
+	add di, 8
+	cmp eax, 0xC00000
+	jc .loop_pages
+	pop di
     mov al, 0xFF
     out 0xA1, al
     out 0x21, al

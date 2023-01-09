@@ -14,6 +14,8 @@ global read_tsc
 global stop_kernel
 global reset_cpu
 
+global rebuild_PML4
+
 memcpy8:
     mov ecx, edx
     rep movsb
@@ -62,6 +64,17 @@ read_tsc:
     rdtsc
     shr rdx, 32
     or rax, rdx
+    ret
+
+rebuild_PML4:
+    mov rdi, 0x100000
+    mov rbx, 0x100000000
+.loop:
+    mov [rdi], rax
+    add rax, 0x1000
+    add rdi, 8
+    cmp rax, rbx
+    jb .loop
     ret
 
 stop_kernel:
