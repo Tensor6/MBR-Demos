@@ -277,6 +277,10 @@ start64:
 	or eax, PAGE_ATTR
 	mov [es:di + 0x2036], eax
 
+    lea eax, [es:di + 0x303E]
+	or eax, PAGE_ATTR
+	mov [es:di + 0x203E], eax
+
 	push di
 	lea di, [di + 0x3000]
 	mov eax, PAGE_ATTR
@@ -284,7 +288,7 @@ start64:
 	mov [es:di], eax
 	add eax, 0x1000
 	add di, 8
-	cmp eax, 0xC00000
+	cmp eax, 0xE00000
 	jc .loop_pages
 	pop di
     mov al, 0xFF
