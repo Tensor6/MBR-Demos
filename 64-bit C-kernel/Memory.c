@@ -12,16 +12,20 @@ void* readSegAddr16(uint16_t seg, uint16_t addr) {
 };
 
 void rebuild_PML4(){
-    *((uint64_t*) 0x10000) = 0x11000 | 0x03;
-    *((uint64_t*) 0x11000) = 0x12000 | 0x03;
-    uint64_t* pd = (uint64_t*) 0x12000;
-    for (uint32_t i = 0; i < 1024; i++){
-        *pd++ = (0x3000 + (i * 8)) | 0x03;
+    uint64_t* pml4 = (uint64_t*) 0x100000; // Page Map Level 4 table at the 1 megabyte mark
+    uint64_t* pdpt = (uint64_t*) 0x101000; // Page directory pointer table at the 1 megabyte mark + 4096 bytes
+    uint64_t* pd = (uint64_t*) 0x108000; // Page directory
+    uint64_t* pt = (uint64_t*) 0x110000; // Page table
+    *pml4 = 0x101003; // Set first pointer in PML4 to point to PDPT
+    *pdpt = 0x108003; // Set first pointer in PDPT to point to PD
+    uint64_t address = 3;
+    for (uint32_t i = 0; i < 512; i++){
+        *pd++ = (uint64_t) pt | 0x03;
+        for (uint32_t j = 0; j < 512; j++){
+            *pt++ = address;
+            address += 0x1000;
+        }
     }
-    uint64_t* pt = (uint64_t*) 0x13000;
-    for (uint64_t address = 3; address < 0x400000; address += 0x1000){
-        *pt++ = address;
-    }
+    set_PML4(pml4);
     stop_kernel();
-    //set_PML4((void*) 0x10000);
 };
