@@ -1,6 +1,8 @@
 [bits 64]
 [section .text]
 
+%define PAGE_ATTR 0x03 ; Write and present
+
 global memcpy8
 global memset8
 global memcpy16
@@ -14,7 +16,12 @@ global read_tsc
 global stop_kernel
 global reset_cpu
 
-global rebuild_PML4
+global set_PML4
+
+set_PML4:
+    mov rax, rdi
+    mov cr3, rax
+    ret
 
 memcpy8:
     mov ecx, edx
@@ -64,17 +71,6 @@ read_tsc:
     rdtsc
     shr rdx, 32
     or rax, rdx
-    ret
-
-rebuild_PML4:
-    mov rdi, 0x100000
-    mov rbx, 0x100000000
-.loop:
-    mov [rdi], rax
-    add rax, 0x1000
-    add rdi, 8
-    cmp rax, rbx
-    jb .loop
     ret
 
 stop_kernel:

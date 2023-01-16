@@ -227,11 +227,6 @@ disk_reset:
     mov ah, 0x00
     mov dl, [BOOT_DRIVE]
     int 0x13
-    jc .reset_error
-    ret
-.reset_error:
-    mov si, DISK_RESET_ERROR
-    call print_string
     ret
     
 start64:
@@ -252,34 +247,21 @@ start64:
 	lea eax, [es:di + 0x3000]
 	or eax, PAGE_ATTR
 	mov [es:di + 0x2000], eax
-
     lea eax, [es:di + 0x3008]
 	or eax, PAGE_ATTR
 	mov [es:di + 0x2008], eax
-
     lea eax, [es:di + 0x3010]
 	or eax, PAGE_ATTR
 	mov [es:di + 0x2010], eax
-
     lea eax, [es:di + 0x3018]
 	or eax, PAGE_ATTR
 	mov [es:di + 0x2018], eax
-
     lea eax, [es:di + 0x3026]
 	or eax, PAGE_ATTR
 	mov [es:di + 0x2026], eax
-
     lea eax, [es:di + 0x302E]
 	or eax, PAGE_ATTR
 	mov [es:di + 0x202E], eax
-
-    lea eax, [es:di + 0x3036]
-	or eax, PAGE_ATTR
-	mov [es:di + 0x2036], eax
-
-    lea eax, [es:di + 0x303E]
-	or eax, PAGE_ATTR
-	mov [es:di + 0x203E], eax
 
 	push di
 	lea di, [di + 0x3000]
@@ -288,7 +270,7 @@ start64:
 	mov [es:di], eax
 	add eax, 0x1000
 	add di, 8
-	cmp eax, 0xE00000
+	cmp eax, 0xA00000
 	jc .loop_pages
 	pop di
     mov al, 0xFF
@@ -338,7 +320,6 @@ NULL_IDT:
     dd 0
 
 KDR: db "Failed to read the kernel!",0xA,0xD,0x00
-DISK_RESET_ERROR: db "Disk reset fail!",0xA,0x00
 NO_A20: db "Failed to enable A20!",0x00
 
 

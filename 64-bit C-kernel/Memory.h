@@ -12,6 +12,8 @@ extern void memset32(void* buffer, uint32_t value, uint64_t length);
 extern void memcpy64(void* dest, void* src, uint64_t length);
 extern void memset64(void* buffer, uint64_t value, uint64_t length);
 
+extern void set_PML4(void* PML4_addr);
+
 void* readSegAddr32(uint32_t address);
 void* readSegAddr16(uint16_t segment, uint16_t address);
 
